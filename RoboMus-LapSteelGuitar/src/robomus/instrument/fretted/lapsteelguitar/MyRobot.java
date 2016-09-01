@@ -30,7 +30,7 @@ public class MyRobot extends FrettedInstrument{
     
     
     public void handshake(){
-        
+        /*
         
         OSCPortOut sender = new OSCPortOut(this.address , this.portaEnvio);
 	
@@ -59,7 +59,7 @@ public class MyRobot extends FrettedInstrument{
 	 } catch (Exception e) {
 		// showError("Couldn't send");
 	 }
-    
+         */
 	
         
     }
