@@ -6,7 +6,7 @@
 package robomus.instrument.fretted;
 
 import java.net.InetAddress;
-import lapsteelguitarrobot.instrument.Instrument;
+import robomus.instrument.Instrument;
 
 /**
  *
@@ -26,14 +26,14 @@ public abstract class FrettedInstrument extends Instrument{
         this.nFrets = nFrets;
         this.strings = strings;
     }
-    
+    /*
     public String formatStrings(){
         String formated = "";
         for (InstumentString s : strings) {
             formated = formated + 
         }
         
-    }
+    }*/
     
     
 }
