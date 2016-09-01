@@ -11,8 +11,8 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import lapsteelguitarrobot.instrument.fretted.FrettedInstrument;
-import lapsteelguitarrobot.instrument.fretted.InstumentString;
+import robomus.instrument.fretted.FrettedInstrument;
+import robomus.instrument.fretted.InstumentString;
 
 
 /**
