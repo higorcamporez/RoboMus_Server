@@ -17,7 +17,7 @@ import robomus.instrument.fretted.InstumentString;
 
 /**
  *
- * @author Higor ghghghg
+ * @author Higor ghghghghg
  */
 public class MyRobot extends FrettedInstrument{
 
