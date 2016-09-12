@@ -22,9 +22,7 @@ public abstract class Instrument {
     protected String typeFamily; //tipo do instrumento
     protected String specificProtocol; //procolo especifico do robo
 
-    public Instrument(String name, int polyphony, String OscAddress,
-        InetAddress severAddress, int sendPort, int receivePort,
-        String typeFamily) {
+    public Instrument(String name, int polyphony, String OscAddress, InetAddress severAddress, int sendPort, int receivePort, String typeFamily, String specificProtocol) {
         
         this.name = name;
         this.polyphony = polyphony;
@@ -33,6 +31,7 @@ public abstract class Instrument {
         this.sendPort = sendPort;
         this.receivePort = receivePort;
         this.typeFamily = typeFamily;
+        this.specificProtocol = specificProtocol;
     }
     
     

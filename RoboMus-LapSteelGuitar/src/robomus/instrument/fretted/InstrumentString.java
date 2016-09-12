@@ -9,9 +9,14 @@ package robomus.instrument.fretted;
  *
  * @author Higor
  */
-public class InstumentString {
+public class InstrumentString {
     private int stringNumber;
     private String openStringNote;
+
+    public InstrumentString(int stringNumber, String openStringNote) {
+        this.stringNumber = stringNumber;
+        this.openStringNote = openStringNote;
+    }
 
     public int getStringNumber() {
         return stringNumber;

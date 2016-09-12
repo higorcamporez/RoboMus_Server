@@ -6,6 +6,7 @@
 package robomus.instrument.fretted;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import robomus.instrument.Instrument;
 
 /**
@@ -15,25 +16,27 @@ import robomus.instrument.Instrument;
 public abstract class FrettedInstrument extends Instrument{
     
     protected int nFrets;
-    protected InstumentString[] strings;
+    protected ArrayList<InstrumentString> strings;
 
-    public FrettedInstrument(int nFrets, InstumentString[] strings, String name,
+    public FrettedInstrument(int nFrets, ArrayList<InstrumentString> strings, String name,
             int polyphony, String OscAddress, InetAddress severAddress, 
-            int sendPort, int receivePort, String typeFamily) {
+            int sendPort, int receivePort, String typeFamily, String specificProtocol) {
         super(name, polyphony, OscAddress, severAddress, sendPort, receivePort,
-                typeFamily);
+                typeFamily, specificProtocol);
         
         this.nFrets = nFrets;
         this.strings = strings;
     }
-    /*
-    public String formatStrings(){
+    
+    public String convertInstrumentoStringToString(){
         String formated = "";
-        for (InstumentString s : strings) {
-            formated = formated + 
-        }
         
-    }*/
+        for (InstrumentString s : strings) {
+            String aux = "<"+Integer.toString(s.getStringNumber())+ ";"+ s.getOpenStringNote()+">";
+            formated = formated + aux;
+        }
+        return formated;
+    }
     
     
 }
