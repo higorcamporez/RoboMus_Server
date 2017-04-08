@@ -22,7 +22,9 @@ public class Instrument {
     protected String specificProtocol; //procolo especifico do robo
     protected String ip;
     protected int threshold;
-
+    
+    public Instrument(){
+    }
     public Instrument(String name, int polyphony, String OscAddress,
             int sendPort, int receivePort,
             String typeFamily, String specificProtocol, String ip, int threshold) {
@@ -107,6 +109,10 @@ public class Instrument {
 
     public void setSpecificProtocol(String specificProtocol) {
         this.specificProtocol = specificProtocol;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
     }
     
     
