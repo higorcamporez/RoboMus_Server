@@ -37,10 +37,12 @@ public class Server {
     PrintWriter laplapArq, laplap2Arq, infoSaidaArq;
     public long id;
     private SychTime syncTime;
+    private String oscAdress;
     
     public Server(int port) {
         this.sychInterval = 10000; 
         this.port = port;
+        this.oscAdress = "/server";
         this.instrumentsHandshakes = new ArrayList<OSCMessage>();
         this.instruments = new ArrayList<>();
 //        this.instruments.add(new Instrument("laplap", 1, "/laplap",
@@ -148,7 +150,30 @@ public class Server {
         instrument.setReceivePort((int)arguments.get(6));
         instrument.setSendPort((int)arguments.get(6));
         this.instruments.add(instrument);
-        //this.instrumentsHandshakes.add(message);
+        
+        OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/handshake");
+        //msg.addArgument(0);
+        //msg.addArgument(1254);
+        msg.addArgument(this.oscAdress);
+        try {
+            msg.addArgument(InetAddress.getLocalHost().getHostAddress());
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        msg.addArgument(this.port);
+        OSCPortOut sender = null;
+        try {
+            sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getSendPort());
+        } catch (SocketException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            sender.send(msg);
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     public void logBlink(OSCMessage oscMessage){    
         String[] divideAddress = divideAddress(oscMessage.getAddress());
@@ -253,23 +278,15 @@ public class Server {
             OSCListener listener = new OSCListener() {
                 @Override
                 public void acceptMessage(java.util.Date time, OSCMessage message) {
-                    /*System.out.println("Message received! end: " + message.getAddress());
-                     List l = message.getArguments();
-                     System.out.println("time "+time);
-                     //put in a buffer
-                     System.out.println("tam= "+l.size());
-                     for (Object l1 : l) {
-                     System.out.println("ob = "+l1);
-                     }*/
 
                     String[] dividedAdress = divideAddress(message.getAddress());
                     if (dividedAdress.length >= 2) {
                         System.out.println(dividedAdress[1]);
+ 
                         switch (dividedAdress[1]) {
-                            case "handshake":
-                                System.out.println("handshake");
+                            /*case "handshake":
                                 receiveHandshake(message);
-                                break;
+                                break;*/
                             case "blink":
                                 System.out.println("recebeu blink resposta");
                                 logBlink(message);
@@ -290,9 +307,20 @@ public class Server {
                                 break;
 
                         }
+                        
                     }
                 }
             };
+            
+            OSCListener listenerHandshake = new OSCListener() {
+                @Override
+                public void acceptMessage(java.util.Date time, OSCMessage message) {
+                        System.out.println("list hand");
+                        receiveHandshake(message);
+
+                }
+            };
+            receiver.addListener("/handshake", listenerHandshake);
             receiver.addListener("/server/*", listener);
             receiver.addListener("/server/*/*", listener);
             
