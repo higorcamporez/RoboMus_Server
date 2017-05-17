@@ -5,13 +5,14 @@
  */
 package robomus.server;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 
 /**
  *
  * @author Higor
  */
-public class Instrument {
+public class Instrument implements Serializable{
     
     protected String name; // nome do instrumento   
     protected int polyphony; // quantidade de notas
@@ -113,6 +114,11 @@ public class Instrument {
 
     public void setIp(String ip) {
         this.ip = ip;
+    }
+
+    @Override
+    public String toString() {
+        return "Instrument{" + "name=" + name + ", polyphony=" + polyphony + ", OscAddress=" + OscAddress + ", sendPort=" + sendPort + ", receivePort=" + receivePort + ", typeFamily=" + typeFamily + ", specificProtocol=" + specificProtocol + ", ip=" + ip + ", threshold=" + threshold + '}';
     }
     
     

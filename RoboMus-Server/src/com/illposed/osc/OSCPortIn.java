@@ -102,7 +102,7 @@ public class OSCPortIn extends OSCPort implements Runnable {
 		while (listening) {
 			try {
 				try {
-					socket.receive(packet);
+					socket.receive(packet);                                    
 				} catch (SocketException ex) {
 					if (listening) {
 						throw ex;
@@ -114,6 +114,7 @@ public class OSCPortIn extends OSCPort implements Runnable {
 				}
 				final OSCPacket oscPacket = converter.convert(buffer,
 						packet.getLength());
+                                ((OSCMessage)oscPacket).setIp(packet.getAddress());
 				dispatcher.dispatchPacket(oscPacket);
 			} catch (IOException ex) {
 				ex.printStackTrace(); // XXX This may not be a good idea, as this could easily lead to a never ending series of exceptions thrown (due to the non-exited while loop), and because the user of the lib may want to handle this case himself

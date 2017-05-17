@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Date;
+import robomus.server.Instrument;
 
 /**
  * OSCJavaToByteArrayConverter is a helper class that translates
@@ -248,7 +249,7 @@ public class OSCJavaToByteArrayConverter {
 			write((Long) anObject);
 		} else if (anObject instanceof Date) {
 			write((Date) anObject);
-		} else if (!isNoDataObject(anObject)) {
+		}else if (!isNoDataObject(anObject)) {
 			throw new UnsupportedOperationException("Do not know how to write an object of class: "
 					+ anObject.getClass());
 		}

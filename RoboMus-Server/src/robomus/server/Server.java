@@ -37,6 +37,7 @@ public class Server {
     PrintWriter laplapArq, laplap2Arq, infoSaidaArq;
     public long id;
     private SychTime syncTime;
+    
     public Server(int port) {
         this.sychInterval = 10000; 
         this.port = port;
@@ -62,6 +63,14 @@ public class Server {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         
+    }
+
+    public List<Instrument> getInstruments() {
+        return instruments;
+    }
+
+    public void setInstruments(List<Instrument> instruments) {
+        this.instruments = instruments;
     }
     
     
@@ -195,7 +204,46 @@ public class Server {
             }
         }
         
-    } 
+    }
+    public void sendInstruments(OSCMessage oscMessage){
+        
+        OSCPortOut sender = null;
+        OSCMessage msg  = null;
+            try {
+                sender = new OSCPortOut(oscMessage.getIp(), 12345);
+                if( !oscMessage.getArguments().isEmpty()){
+                    System.out.println("end="+(String) oscMessage.getArguments().get(0)+"/instruments");
+                    
+                    
+                    for (Instrument inst : instruments) {
+                        msg = new OSCMessage((String) oscMessage.getArguments().get(0)+"/instrument");
+                        msg.addArgument(inst.getName());
+                        msg.addArgument(inst.getPolyphony());
+                        msg.addArgument(inst.getTypeFamily());
+                        msg.addArgument(inst.getSpecificProtocol());
+                        msg.addArgument(inst.getOscAddress());
+                        try {
+                        sender.send(msg);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+ 
+                    }
+                     
+                     
+                }else{
+                    System.out.println("erro");
+                    return;
+                }
+
+                
+               
+            } catch (SocketException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+   
+        
+    }
     public void receiveMessages(){
         
         OSCPortIn receiver;
@@ -213,9 +261,10 @@ public class Server {
                      for (Object l1 : l) {
                      System.out.println("ob = "+l1);
                      }*/
-                    //System.out.println("chegou");
+
                     String[] dividedAdress = divideAddress(message.getAddress());
                     if (dividedAdress.length >= 2) {
+                        System.out.println(dividedAdress[1]);
                         switch (dividedAdress[1]) {
                             case "handshake":
                                 System.out.println("handshake");
@@ -224,6 +273,16 @@ public class Server {
                             case "blink":
                                 System.out.println("recebeu blink resposta");
                                 logBlink(message);
+                                break;
+                            case "action":
+                                System.out.println("recebeu action resposta: "
+                                        +message.getArguments().get(0));
+                               
+                                break;
+                            case "getInstruments":
+                                
+                                sendInstruments(message);
+                               
                                 break;
                             default:
                                 System.out.println("recebeu msg default");
@@ -234,8 +293,9 @@ public class Server {
                     }
                 }
             };
-
+            receiver.addListener("/server/*", listener);
             receiver.addListener("/server/*/*", listener);
+            
             receiver.startListening();
             
             

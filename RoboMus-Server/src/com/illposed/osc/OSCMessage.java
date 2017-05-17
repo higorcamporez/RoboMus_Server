@@ -9,6 +9,8 @@
 package com.illposed.osc;
 
 import com.illposed.osc.utility.OSCJavaToByteArrayConverter;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +39,11 @@ public class OSCMessage extends AbstractOSCPacket {
 
 	private String address;
 	private List<Object> arguments;
+        private InetAddress ip;
 
+        
+        
+        
 	/**
 	 * Creates an empty OSC Message.
 	 * In order to send this OSC message,
@@ -71,7 +77,12 @@ public class OSCMessage extends AbstractOSCPacket {
 			this.arguments = new ArrayList<Object>(arguments);
 		}
 	}
-
+        
+        public OSCMessage(String address, List<Object> arguments, InetAddress ip) {
+            this(address,arguments);
+            this.ip = ip;
+        }
+        
 	/**
 	 * The receiver of this message.
 	 * @return the receiver of this OSC Message
@@ -89,7 +100,13 @@ public class OSCMessage extends AbstractOSCPacket {
 		this.address = address;
 		contentChanged();
 	}
+        public InetAddress getIp() {
+            return ip;
+        }
 
+        public void setIp(InetAddress ip) {
+            this.ip = ip;
+        }
 	/**
 	 * Add an argument to the list of arguments.
 	 * @param argument a Float, Double, String, Character, Integer, Long, Boolean, null
