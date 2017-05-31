@@ -30,8 +30,8 @@ import java.util.logging.Logger;
  */
 public class Server {
     private int port;
-    private List<OSCMessage> instrumentsHandshakes;
     private List<Instrument> instruments;
+    private List<Client> clients;
     private int sychInterval; //interval in milisecund
     FileWriter arq, arq2, arq3;
     PrintWriter laplapArq, laplap2Arq, infoSaidaArq;
@@ -43,7 +43,7 @@ public class Server {
         this.sychInterval = 10000; 
         this.port = port;
         this.oscAdress = "/server";
-        this.instrumentsHandshakes = new ArrayList<OSCMessage>();
+        this.clients = new ArrayList<>();
         this.instruments = new ArrayList<>();
 //        this.instruments.add(new Instrument("laplap", 1, "/laplap",
 //                1234, 1234, "seila", "nao sei","10.0.0.101", 100));
@@ -74,7 +74,6 @@ public class Server {
     public void setInstruments(List<Instrument> instruments) {
         this.instruments = instruments;
     }
-    
     
     
     public void TestMsg(){
@@ -137,6 +136,7 @@ public class Server {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
     public void receiveHandshake(OSCMessage message){
         Instrument instrument = new Instrument();
         List arguments = message.getArguments();
@@ -149,7 +149,10 @@ public class Server {
         instrument.setIp((String)arguments.get(5));
         instrument.setReceivePort((int)arguments.get(6));
         instrument.setSendPort((int)arguments.get(6));
-        this.instruments.add(instrument);
+        if(!this.instruments.contains(instrument)){
+            this.instruments.add(instrument);
+        }
+        
         
         OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/handshake");
         //msg.addArgument(0);
@@ -175,6 +178,41 @@ public class Server {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    public void receiveHandshakeClient(OSCMessage message){
+        Client client = new Client();
+        List arguments = message.getArguments();
+        
+        client.setName(arguments.get(0).toString());
+        client.setOscAdress(arguments.get(1).toString());
+        client.setIpAdress(arguments.get(2).toString());
+        client.setPort(Integer.parseInt(arguments.get(3).toString()));
+        
+        if(!this.clients.contains(client)){
+            this.clients.add(client);
+        } 
+        OSCMessage msg = new OSCMessage(client.getOscAdress()+"/handshake");
+        msg.addArgument(this.oscAdress);
+        try {
+            msg.addArgument(InetAddress.getLocalHost().getHostAddress());
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        msg.addArgument(this.port);
+        OSCPortOut sender = null;
+        try {
+            sender = new OSCPortOut(InetAddress.getByName(client.getIpAdress()), client.getPort());
+        } catch (SocketException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            sender.send(msg);
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+     
     public void logBlink(OSCMessage oscMessage){    
         String[] divideAddress = divideAddress(oscMessage.getAddress());
         //System.out.println("ad="+divideAddress[2]);
@@ -315,11 +353,22 @@ public class Server {
             OSCListener listenerHandshake = new OSCListener() {
                 @Override
                 public void acceptMessage(java.util.Date time, OSCMessage message) {
-                        System.out.println("list hand");
-                        receiveHandshake(message);
+                    System.out.println("handshake");
+                    receiveHandshake(message);
 
                 }
             };
+            
+            OSCListener listenerHandshakeClient = new OSCListener() {
+                @Override
+                public void acceptMessage(java.util.Date time, OSCMessage message) {
+                    System.out.println("handshake/client");
+                    receiveHandshakeClient(message);
+
+                }
+            };
+            
+            receiver.addListener("/handshake/client", listenerHandshakeClient);
             receiver.addListener("/handshake", listenerHandshake);
             receiver.addListener("/server/*", listener);
             receiver.addListener("/server/*/*", listener);
@@ -428,6 +477,26 @@ public class Server {
         }
     }
     
+    public void printClients(){
+        if(this.clients.size() == 0){
+            System.out.println("No client");
+        }else{
+            for (Client client : this.clients) {
+                System.out.println(client.toString());
+            }
+        }
+        
+    }
+    
+    public void printInstruments(){
+        if(this.instruments.size() == 0){
+            System.out.println("No instrument");
+        }else{
+            for (Instrument instrument : this.instruments) {
+                System.out.println(instrument.toString());
+            }
+        }
+    }
     public static void main(String[] args) throws SocketException {
         Server server = new Server(12345);
         server.receiveMessages();

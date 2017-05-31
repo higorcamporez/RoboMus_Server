@@ -7,6 +7,7 @@ package robomus.server;
 
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.Objects;
 
 /**
  *
@@ -119,6 +120,23 @@ public class Instrument implements Serializable{
     @Override
     public String toString() {
         return "Instrument{" + "name=" + name + ", polyphony=" + polyphony + ", OscAddress=" + OscAddress + ", sendPort=" + sendPort + ", receivePort=" + receivePort + ", typeFamily=" + typeFamily + ", specificProtocol=" + specificProtocol + ", ip=" + ip + ", threshold=" + threshold + '}';
+    }
+
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Instrument other = (Instrument) obj;
+        if (!Objects.equals(this.OscAddress, other.OscAddress)) {
+            return false;
+        }
+        return true;
     }
     
     

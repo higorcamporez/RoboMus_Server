@@ -5,6 +5,7 @@
  */
 package robomus.test;
 
+import java.util.Scanner;
 import robomus.server.Instrument;
 import robomus.server.Server;
 
@@ -39,6 +40,23 @@ public class TestClient {
     
     public static void main(String[] args) {
         TestClient c = new TestClient();
+        while(true){
+            System.out.println("============= menu ===============");
+            System.out.println("(0) print instruments");
+            System.out.println("(1) print clients");
+            System.out.println("==================================");
+            Scanner ler = new Scanner(System.in);
+            String op = ler.nextLine();
+            if(op.equals("0")){
+                c.server.printInstruments();
+            }else if(op.equals("1")){
+                c.server.printClients();
+            }else{
+                System.out.println("option not found\n");
+            }
+            
+        }
+        
     }
     
 }
