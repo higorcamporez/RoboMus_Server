@@ -5,12 +5,12 @@
  */
 package robomus.server;
 
+import com.illposed.osc.OSCBundle;
 import com.illposed.osc.OSCListener;
 import com.illposed.osc.OSCMessage;
-import com.illposed.osc.OSCPort;
 import com.illposed.osc.OSCPortIn;
 import com.illposed.osc.OSCPortOut;
-import com.sun.corba.se.pept.transport.ListenerThread;
+import com.sun.corba.se.impl.ior.NewObjectKeyTemplateBase;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,7 +20,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,17 +37,15 @@ public class Server {
     public long id;
     private SychTime syncTime;
     private String oscAdress;
+    private String name;
     
     public Server(int port) {
         this.sychInterval = 10000; 
         this.port = port;
         this.oscAdress = "/server";
+        this.name = "server";
         this.clients = new ArrayList<>();
         this.instruments = new ArrayList<>();
-//        this.instruments.add(new Instrument("laplap", 1, "/laplap",
-//                1234, 1234, "seila", "nao sei","10.0.0.101", 100));
-//        this.instruments.add(new Instrument("laplap", 1, "/laplap2",
-//                1234, 1234, "seila", "nao sei","10.0.0.102", 100));
                
         System.out.println("server started");
         this.id = 0;
@@ -137,18 +134,18 @@ public class Server {
         }
     }
     
-    public void receiveHandshake(OSCMessage message){
+    public void receiveHandshakeInstrument(OSCMessage message){
         Instrument instrument = new Instrument();
         List arguments = message.getArguments();
         
         instrument.setName((String)arguments.get(0));
-        instrument.setPolyphony((int)arguments.get(1));
-        instrument.setTypeFamily((String)arguments.get(2));
-        instrument.setSpecificProtocol((String)arguments.get(3));
-        instrument.setOscAddress((String)arguments.get(4));
-        instrument.setIp((String)arguments.get(5));
-        instrument.setReceivePort((int)arguments.get(6));
-        instrument.setSendPort((int)arguments.get(6));
+        instrument.setOscAddress((String)arguments.get(1));
+        instrument.setIp((String)arguments.get(2));
+        instrument.setReceivePort((int)arguments.get(3));
+        instrument.setPolyphony((int)arguments.get(4));
+        instrument.setTypeFamily((String)arguments.get(5));
+        instrument.setSpecificProtocol((String)arguments.get(6));
+        
         if(!this.instruments.contains(instrument)){
             this.instruments.add(instrument);
         }
@@ -157,6 +154,7 @@ public class Server {
         OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/handshake");
         //msg.addArgument(0);
         //msg.addArgument(1254);
+        msg.addArgument(this.name);
         msg.addArgument(this.oscAdress);
         try {
             msg.addArgument(InetAddress.getLocalHost().getHostAddress());
@@ -166,7 +164,7 @@ public class Server {
         msg.addArgument(this.port);
         OSCPortOut sender = null;
         try {
-            sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getSendPort());
+            sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
         } catch (SocketException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         } catch (UnknownHostException ex) {
@@ -190,7 +188,10 @@ public class Server {
         if(!this.clients.contains(client)){
             this.clients.add(client);
         } 
+        
+        //send server informations
         OSCMessage msg = new OSCMessage(client.getOscAdress()+"/handshake");
+        msg.addArgument(this.name);
         msg.addArgument(this.oscAdress);
         try {
             msg.addArgument(InetAddress.getLocalHost().getHostAddress());
@@ -251,12 +252,12 @@ public class Server {
             System.out.println("encontrou");
             OSCPortOut sender = null;
             try {
-                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getSendPort());
+                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
                 OSCMessage msg = new OSCMessage("/"+dividedAdress[1]+"/"+dividedAdress[2],oscMessage.getArguments());
                 
                 try {
                     sender.send(msg);
-                    System.out.println("enviou "+instrument.getIp()+" "+instrument.getSendPort());
+                    System.out.println("enviou "+instrument.getIp()+" "+instrument.getReceivePort());
                 } catch (IOException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -277,6 +278,7 @@ public class Server {
                 if( !oscMessage.getArguments().isEmpty()){
                     System.out.println("end="+(String) oscMessage.getArguments().get(0)+"/instruments");
                     
+                    OSCBundle oscBundle = new OSCBundle();
                     
                     for (Instrument inst : instruments) {
                         msg = new OSCMessage((String) oscMessage.getArguments().get(0)+"/instrument");
@@ -285,14 +287,15 @@ public class Server {
                         msg.addArgument(inst.getTypeFamily());
                         msg.addArgument(inst.getSpecificProtocol());
                         msg.addArgument(inst.getOscAddress());
-                        try {
-                        sender.send(msg);
-                        } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                        }
- 
+                        
+                        oscBundle.addPacket(msg);
+                        
                     }
-                     
+                    try {
+                        sender.send(oscBundle);
+                    } catch (IOException ex) {
+                        Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                    } 
                      
                 }else{
                     System.out.println("erro");
@@ -306,6 +309,26 @@ public class Server {
             }
    
         
+    }
+    public void disconnect(OSCMessage oscMessage){
+        String[] dividedAdress = divideAddress(oscMessage.getAddress());
+        if (dividedAdress.length == 3 && oscMessage.getArguments().size() >= 1) {
+            System.out.println("2: "+ dividedAdress[2]+ " a: "+oscMessage.getArguments().get(0).toString());
+            if(dividedAdress[2].equals("client")){
+                Client client = new Client();
+                client.setOscAdress(oscMessage.getArguments().get(0).toString());
+                if(this.clients.remove(client)){
+                    System.out.println("Client '"+oscMessage.getArguments().get(0).toString()+"' disconnected");
+                }
+            }
+            if(dividedAdress[2].equals("instrument")){ 
+                Instrument instrument = new Instrument();
+                instrument.setOscAddress(oscMessage.getArguments().get(0).toString());
+                if ( this.instruments.remove(instrument) ){
+                    System.out.println("Instrument '"+oscMessage.getArguments().get(0).toString()+"' disconnected");
+                }
+            }
+        }  
     }
     public void receiveMessages(){
         
@@ -339,6 +362,11 @@ public class Server {
                                 sendInstruments(message);
                                
                                 break;
+                            case "disconnect":
+                                
+                                disconnect(message);
+                               
+                                break;
                             default:
                                 System.out.println("recebeu msg default");
                                 forwardMessage(message);
@@ -353,23 +381,31 @@ public class Server {
             OSCListener listenerHandshake = new OSCListener() {
                 @Override
                 public void acceptMessage(java.util.Date time, OSCMessage message) {
-                    System.out.println("handshake");
-                    receiveHandshake(message);
+    
+                    String[] dividedAdress = divideAddress(message.getAddress());
+                    if (dividedAdress.length >= 2) {
+ 
+                        switch (dividedAdress[1]) {
+                            case "client":
+                                System.out.println("/handshake/client");
+                                receiveHandshakeClient(message);
+                                break;
+                            case "instrument":
+                                System.out.println("/handshake/instrument");
+                                receiveHandshakeInstrument(message);
+                                break;
+                            default:
+                                System.out.println("handshake unknown");
+                                break;
+
+                        }
+                    }    
+                    
 
                 }
             };
-            
-            OSCListener listenerHandshakeClient = new OSCListener() {
-                @Override
-                public void acceptMessage(java.util.Date time, OSCMessage message) {
-                    System.out.println("handshake/client");
-                    receiveHandshakeClient(message);
 
-                }
-            };
-            
-            receiver.addListener("/handshake/client", listenerHandshakeClient);
-            receiver.addListener("/handshake", listenerHandshake);
+            receiver.addListener("/handshake/*", listenerHandshake);
             receiver.addListener("/server/*", listener);
             receiver.addListener("/server/*/*", listener);
             
@@ -386,7 +422,7 @@ public class Server {
         OSCPortOut sender = null;
         for (Instrument instrument : instruments) {
             try {
-                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getSendPort());
+                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
                 OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/blink");
                 msg.addArgument(time);
                 msg.addArgument(cor);
@@ -458,7 +494,7 @@ public class Server {
         OSCPortOut sender = null;
         for (Instrument instrument : instruments) {
             try {
-                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getSendPort());
+                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
                 OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/playNoteTest");
                 msg.addArgument((long)100);
                 msg.addArgument(fretNumber);
