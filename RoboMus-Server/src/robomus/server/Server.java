@@ -148,6 +148,7 @@ public class Server {
         
         if(!this.instruments.contains(instrument)){
             this.instruments.add(instrument);
+            sendInstrument(instrument);
         }
         
         
@@ -310,10 +311,46 @@ public class Server {
    
         
     }
+    public void sendInstrument(Instrument instrument){
+        
+        OSCPortOut sender = null;
+        OSCMessage msg  = null;
+           
+                    
+        for (Client client : this.clients) {
+
+            try {
+                sender = new OSCPortOut(InetAddress.getByName(
+                                         client.getIpAdress()),
+                                        client.getPort());
+
+                msg = new OSCMessage(client.getOscAdress()+"/instrument");
+                msg.addArgument(instrument.getName());
+                msg.addArgument(instrument.getPolyphony());
+                msg.addArgument(instrument.getTypeFamily());
+                msg.addArgument(instrument.getSpecificProtocol());
+                msg.addArgument(instrument.getOscAddress());
+
+
+                sender.send(msg);
+            } catch (UnknownHostException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SocketException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+         
+    }
+        
+   
+        
+    
     public void disconnect(OSCMessage oscMessage){
         String[] dividedAdress = divideAddress(oscMessage.getAddress());
         if (dividedAdress.length == 3 && oscMessage.getArguments().size() >= 1) {
-            System.out.println("2: "+ dividedAdress[2]+ " a: "+oscMessage.getArguments().get(0).toString());
+            //System.out.println("2: "+ dividedAdress[2]+ " a: "+oscMessage.getArguments().get(0).toString());
             if(dividedAdress[2].equals("client")){
                 Client client = new Client();
                 client.setOscAdress(oscMessage.getArguments().get(0).toString());
@@ -327,8 +364,31 @@ public class Server {
                 if ( this.instruments.remove(instrument) ){
                     System.out.println("Instrument '"+oscMessage.getArguments().get(0).toString()+"' disconnected");
                 }
+                sendInstrumentDisconnected(instrument);
             }
         }  
+    }
+    public void sendInstrumentDisconnected(Instrument instrument){
+        OSCPortOut sender = null;
+
+        for (Client client : this.clients) {
+            OSCMessage msg = new OSCMessage(client.getOscAdress()+"/disconnect/instrument");
+            msg.addArgument(instrument.getOscAddress());
+            try {
+                sender = new OSCPortOut(InetAddress.getByName(client.getIpAdress()), client.getPort());
+                try {
+                    sender.send(msg);
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (SocketException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (UnknownHostException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+            
     }
     public void receiveMessages(){
         
