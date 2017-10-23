@@ -27,6 +27,11 @@ public class Instrument implements Serializable{
     
     public Instrument(){
     }
+
+    public Instrument(String OscAddress) {
+        this.OscAddress = OscAddress;
+    }
+    
     public Instrument(String name, int polyphony, String OscAddress,
             int sendPort, int receivePort,
             String typeFamily, String specificProtocol, String ip, int threshold) {

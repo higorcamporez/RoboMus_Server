@@ -5,7 +5,11 @@
  */
 package robomus.test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import robomus.server.Instrument;
 import robomus.server.Server;
 
@@ -37,6 +41,8 @@ public class TestClient {
         
         System.out.println("TesteClient iniciado");
     }
+    
+    
     
     public static void main(String[] args) {
         TestClient c = new TestClient();

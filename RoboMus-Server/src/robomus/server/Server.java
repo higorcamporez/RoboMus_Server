@@ -10,16 +10,18 @@ import com.illposed.osc.OSCListener;
 import com.illposed.osc.OSCMessage;
 import com.illposed.osc.OSCPortIn;
 import com.illposed.osc.OSCPortOut;
-import com.sun.corba.se.impl.ior.NewObjectKeyTemplateBase;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,6 +40,9 @@ public class Server {
     private SychTime syncTime;
     private String oscAdress;
     private String name;
+    private Date date;
+    private SimpleDateFormat dateFormat;
+    private int lastIdReceived;
     
     public Server(int port) {
         this.sychInterval = 10000; 
@@ -46,11 +51,11 @@ public class Server {
         this.name = "server";
         this.clients = new ArrayList<>();
         this.instruments = new ArrayList<>();
-               
+        this.lastIdReceived = -1;       
         System.out.println("server started");
         this.id = 0;
         //iniciando os arquivos 
-        
+      
         try {
             arq = new FileWriter("laplap.txt");
             laplapArq = new PrintWriter(arq);
@@ -61,6 +66,12 @@ public class Server {
         } catch (IOException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        //date
+        this.date = new Date();
+        this.dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+        
+        
         
     }
 
@@ -390,6 +401,17 @@ public class Server {
         
             
     }
+    
+    public void comparatorId(int id){
+        if(this.lastIdReceived == -1){
+            return;
+        }else if(id != (this.lastIdReceived + 1) ){
+            System.out.println("=========================> ERRO id="+id);
+        }else{
+            this.lastIdReceived = id;
+        }
+    }
+    
     public void receiveMessages(){
         
         OSCPortIn receiver;
@@ -414,8 +436,8 @@ public class Server {
                                 break;
                             case "action":
                                 System.out.println("recebeu action resposta: "
-                                        +message.getArguments().get(0));
-                               
+                                        +message.getArguments().get(0)+" - "+ dateFormat.format(GregorianCalendar.getInstance().getTime()) );
+                                
                                 break;
                             case "getInstruments":
                                 
@@ -593,75 +615,6 @@ public class Server {
             }
         }
     }
-    public static void main(String[] args) throws SocketException {
-        Server server = new Server(12345);
-        server.receiveMessages();
-        while(true){
-            System.out.println("Digite uma tecla pra enviar playNoteTest");
-            Scanner ler = new Scanner(System.in);
-            ler.nextLine();
-            server.playNoteTest(4,4);
-            try {
-                Thread.sleep(4000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            server.playNoteTest(6,6);
-            System.out.println("Enviou");
-        }
-        
-        
-         /*   Scanner ler = new Scanner(System.in);
-            
-            while(true){
-                System.out.println("Escolha o tempo: ");
-                long tempo = ler.nextInt();
-                System.out.println("Escolha a cor: ");
-                int cor = ler.nextInt();
-                server.smartphoneBlink(tempo*1000000000,cor);
-                server.smartphoneBlink(tempo*1000000000 + 2000000000,cor+1);
-            }
-        */
-            //server.smartphoneBlink();
-        
-//        int bpm = 15;
-//        int contMsg = 1; 
-//        
-//        
-//        Scanner ler = new Scanner(System.in);
-//            long timeSleep, timeToExecute;
-//            while(true){
-//                System.out.println("Precione qq tecla para enviar: ");
-//                long tempo = ler.nextInt();
-//                if (tempo == 0) {
-//                    server.fecharArq();
-//                }else{
-//                    timeSleep = 250;
-//                    for(int i=5; i <= contMsg+5; i++){                
-//                        
-//                        
-//                        
-//                        server.smartphoneBlink(timeSleep,i%4+1);
-//                        if(i%4 == 0){
-//                            System.out.println("espera");
-//                            try {
-//                                //server.smartphoneBlink(0,i%4+1);
-//                                Thread.sleep(500);
-//                            } catch (InterruptedException ex) {
-//                                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-//                            }
-//                        }
-//                        /*try {
-//                                Thread.sleep(50);
-//                            } catch (InterruptedException ex) {
-//                                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-//                            }*/
-//                    }
-//                    System.out.println("id="+server.id);
-//                }
-//                //server.fecharArq();
-//            }
-       
-    } 
+    
     
 }
