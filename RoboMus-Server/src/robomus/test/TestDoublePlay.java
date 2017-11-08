@@ -66,30 +66,26 @@ public class TestDoublePlay {
         l1.add("F#4");
         l1.add("E4");*/
         int[] duration = {  time,time,time,time,time,time,
-                            2*time,time,time,time,time,time,time,
-                            2*time,time,time,time,time,time,time,
-                            2*time,time,time,time,time,time,time};
+                            time,time,time,time,time,time,time,
+                            time,time,time,time,time,time,time,
+                            time,time,time,time,time,time,time};
         List l = new ArrayList();
 
         for (int i = 0; i < notes.length; i++) {
             l.clear();
-            l.add(0, 1);
-            l.add(1, 123);
-            l.add(notes[i]);
+            l.add(i); //id
+            l.add(i*time); //relative time
+            l.add(time); //duration time
+            l.add(notes[i]); // note
             OSCMessage oscMessage = null;
             if(i%2 == 0){
-                oscMessage = new OSCMessage("/server/laplap/playNote", l);
+                oscMessage = new OSCMessage("/server/bongobot2/playNote", l);
+                System.out.println("bongobot2->Note: "+notes[i]);
             }else{
-                oscMessage = new OSCMessage("/server/laplap2/playNote", l);
+                oscMessage = new OSCMessage("/server/bongobot/playNote", l);
+                System.out.println("bongobot->Note: "+notes[i]);
             }     
             this.server.forwardMessage(oscMessage);
-            try {
-                Thread.sleep(duration[i]);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(TestDoublePlay.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            
-            System.out.println("Note: "+notes[i]);
         }
         
     }
