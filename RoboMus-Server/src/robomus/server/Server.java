@@ -261,7 +261,7 @@ public class Server {
             }
         }
         if(instrument != null){
-            System.out.println("encontrou");
+            //System.out.println("encontrou");
             OSCPortOut sender = null;
             try {
                 sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
@@ -269,7 +269,7 @@ public class Server {
                 
                 try {
                     sender.send(msg);
-                    System.out.println("enviou "+instrument.getIp()+" "+instrument.getReceivePort());
+                    //System.out.println("enviou "+instrument.getIp()+" "+instrument.getReceivePort());
                 } catch (IOException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -424,7 +424,7 @@ public class Server {
 
                     String[] dividedAdress = divideAddress(message.getAddress());
                     if (dividedAdress.length >= 2) {
-                        System.out.println(dividedAdress[1]);
+                        //System.out.println(dividedAdress[1]);
  
                         switch (dividedAdress[1]) {
                             /*case "handshake":
@@ -435,7 +435,7 @@ public class Server {
                                 logBlink(message);
                                 break;
                             case "action":
-                                System.out.println("recebeu action resposta: "
+                                System.out.println("recebeu resposta: "
                                         +message.getArguments().get(0)+" - "+ dateFormat.format(GregorianCalendar.getInstance().getTime()) );
                                 
                                 break;
