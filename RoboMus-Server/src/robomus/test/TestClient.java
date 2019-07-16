@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import robomus.server.Instrument;
+import robomus.instrument.Instrument;
 import robomus.server.Server;
 
 /**
@@ -58,7 +58,7 @@ public class TestClient {
             }else if(op.equals("1")){
                 c.server.printClients();
             }else{
-                System.out.println("option not found\n");
+                System.out.println("Option not found\n");
             }
             
         }

@@ -5,6 +5,7 @@
  */
 package robomus.server;
 
+import robomus.instrument.Instrument;
 import com.illposed.osc.OSCMessage;
 import com.illposed.osc.OSCPortOut;
 import java.io.IOException;

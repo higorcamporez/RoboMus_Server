@@ -14,7 +14,7 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import robomus.server.Instrument;
+import robomus.instrument.Instrument;
 import robomus.server.Server;
 
 /**

@@ -5,6 +5,7 @@
  */
 package robomus.server;
 
+import robomus.instrument.Instrument;
 import com.illposed.osc.OSCBundle;
 import com.illposed.osc.OSCListener;
 import com.illposed.osc.OSCMessage;
@@ -69,9 +70,7 @@ public class Server {
         
         //date
         this.date = new Date();
-        this.dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-        
-        
+        this.dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");   
         
     }
 
@@ -81,68 +80,6 @@ public class Server {
 
     public void setInstruments(List<Instrument> instruments) {
         this.instruments = instruments;
-    }
-    
-    
-    public void TestMsg(){
-     
-        OSCPortOut sender = null;
-        try {
-            sender = new OSCPortOut(InetAddress.getByName("192.168.1.200") , 1234);
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SocketException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
-         List args = new ArrayList<>();
-        
-        args.add(System.currentTimeMillis() + 1000);
-        args.add(2500);
-        args.add(1);
-        
-         OSCMessage msg = new OSCMessage("/laplap/playString" ,args);
-        
-             
-        try {
-            sender.send(msg);
-            System.out.println("msg sent");
-        } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
-                       
-    }   
-            
-            
-    public void playString(int stringNumber){
-        OSCPortOut sender = null;
-        try {
-            sender = new OSCPortOut(InetAddress.getByName("192.168.0.114") , 1234);
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SocketException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
-         List args = new ArrayList<>();
-        
-        args.add(System.currentTimeMillis() + 100);
-        args.add(2500);
-        args.add(stringNumber);
-        
-         OSCMessage msg = new OSCMessage("/laplap/playString" ,args);
-         OSCMessage msg2 = new OSCMessage("/laplap/playString" );           
-         
-         msg2.addArgument(System.currentTimeMillis() + 200);
-         msg2.addArgument(250);
-         msg2.addArgument(stringNumber+1);
-
-        try {
-            sender.send(msg);
-      
-            sender.send(msg2);
-            System.out.println("msg sent");
-        } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
     
     public void receiveHandshakeInstrument(OSCMessage message){
@@ -176,6 +113,7 @@ public class Server {
         msg.addArgument(this.port);
         OSCPortOut sender = null;
         try {
+            System.out.println(instrument.getIp()+ " "+ instrument.getReceivePort());
             sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
         } catch (SocketException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -188,6 +126,7 @@ public class Server {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
     public void receiveHandshakeClient(OSCMessage message){
         Client client = new Client();
         List arguments = message.getArguments();
@@ -212,7 +151,7 @@ public class Server {
         }
         msg.addArgument(this.port);
         OSCPortOut sender = null;
-        try {
+        try {       
             sender = new OSCPortOut(InetAddress.getByName(client.getIpAdress()), client.getPort());
         } catch (SocketException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -225,19 +164,7 @@ public class Server {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-     
-    public void logBlink(OSCMessage oscMessage){    
-        String[] divideAddress = divideAddress(oscMessage.getAddress());
-        //System.out.println("ad="+divideAddress[2]);
-        if(divideAddress[2].equals("laplap")){
-            laplapArq.printf("%d %d%n", System.nanoTime(),
-                    oscMessage.getArguments().get(0) );
-        }else if(divideAddress[2].equals("laplap2")){
-            
-            laplap2Arq.printf("%l %l%n", System.nanoTime(),
-                    oscMessage.getArguments().get(0) );
-        }
-    }
+    
     public String[] divideAddress(String address){
         String aux = address;
         if (aux.startsWith("/")) {
@@ -249,6 +176,7 @@ public class Server {
         return split;
         
     }
+    
     public void forwardMessage(OSCMessage oscMessage){
         String[] dividedAdress = divideAddress(oscMessage.getAddress());
         String instrumentAdress = dividedAdress[1];
@@ -353,10 +281,7 @@ public class Server {
             }
         }
          
-    }
-        
-   
-        
+    }        
     
     public void disconnect(OSCMessage oscMessage){
         String[] dividedAdress = divideAddress(oscMessage.getAddress());
@@ -406,7 +331,7 @@ public class Server {
         if(this.lastIdReceived == -1){
             return;
         }else if(id != (this.lastIdReceived + 1) ){
-            System.out.println("=========================> ERRO id="+id);
+            System.out.println("=========================> ERRO id = "+id);
         }else{
             this.lastIdReceived = id;
         }
@@ -449,6 +374,11 @@ public class Server {
                                 disconnect(message);
                                
                                 break;
+                            case "delay":
+                                
+                                receiveDelay(message);
+                               
+                                break;
                             default:
                                 System.out.println("recebeu msg default");
                                 forwardMessage(message);
@@ -479,11 +409,9 @@ public class Server {
                             default:
                                 System.out.println("handshake unknown");
                                 break;
-
                         }
                     }    
                     
-
                 }
             };
 
@@ -499,100 +427,6 @@ public class Server {
         }
             
                 
-    }
-    public void smartphoneBlink(long time, int cor){
-        OSCPortOut sender = null;
-        for (Instrument instrument : instruments) {
-            try {
-                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
-                OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/blink");
-                msg.addArgument(time);
-                msg.addArgument(cor);
-                msg.addArgument(id);
-                try {
-                    sender.send(msg);
-                } catch (IOException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            } catch (SocketException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (UnknownHostException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        /*
-        OSCPortOut sender2 = null;
-        try {
-            sender = new OSCPortOut(InetAddress.getByName("10.0.0.101") , 1234);
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SocketException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        try {
-            sender2 = new OSCPortOut(InetAddress.getByName("10.0.0.102") , 1234);
-            //System.out.println("sender2");
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SocketException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-         List args = new ArrayList<>();
-        
-        args.add(time);
-        args.add(cor);
-        args.add(id);
-        long id1 = this.id;
-        this.id++;
-        
-         OSCMessage msg = new OSCMessage("/laplap/blink" ,args);
-         OSCMessage msg2 = new OSCMessage("/laplap2/blink" );          
-         msg2.addArgument(time);
-         msg2.addArgument(cor);
-         msg2.addArgument(id);
-         long id2 = this.id;
-         this.id++;
-
-        try {
-            sender.send(msg);
-            infoSaidaArq.printf("%d %d %d%n",System.nanoTime() ,time,id1 );
-            infoSaidaArq.printf("%d %d %d%n",System.nanoTime() ,time,id2 );
-            sender2.send(msg2);
-            
-            System.out.println("msg sent");
-        } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }*/
-    }
-    public void fecharArq(){
-        this.laplap2Arq.close();
-        this.laplapArq.close();
-        this.infoSaidaArq.close();
-        System.out.println("fechou");
-    }
-    public void playNoteTest(int fretNumber, int stringNumber){
-        OSCPortOut sender = null;
-        for (Instrument instrument : instruments) {
-            try {
-                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
-                OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/playNoteTest");
-                msg.addArgument((long)100);
-                msg.addArgument(fretNumber);
-                msg.addArgument(stringNumber);
-                //msg.addArgument(id);
-                try {
-                    sender.send(msg);
-                } catch (IOException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                }  
-            } catch (SocketException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (UnknownHostException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
     }
     
     public void printClients(){
@@ -616,5 +450,181 @@ public class Server {
         }
     }
     
+    public void receiveDelay(OSCMessage oscMessage){
+        
+        String address[] = oscMessage.getAddress().split("/");
+        
+        String instrumentName = address[2];
+        Integer id = oscMessage.getArguments().indexOf(0);
+        Integer delay = oscMessage.getArguments().indexOf(1);
+        
+        //buscando instrumento pelo nome
+        int index = instruments.indexOf(new Instrument("/"+instrumentName));
+        if(index != -1){
+            Instrument instrument = instruments.get(index);
+            
+            //setando espera do delay para falso
+            instrument.setWaitingDelay(false);
+            
+            //setando delay
+            instrument.setLastDelay(delay);
+            
+        }
+               
+    }
     
+    public void trainInstrumentDelay(Instrument  instrument){
+        Integer numMessage = 10;
+        
+        boolean waitingDelay =  true;
+        
+        //enviar primeira msg
+        instrument.createNewAction(id);
+               
+        for(int i = 1; i < numMessage; i++){
+            instrument.
+            long start = System.currentTimeMillis();        
+            while(instrument.isWaitingDelay() || System.currentTimeMillis() - start < 5000);
+            if(waitingDelay){
+                
+            }else{
+                
+            }
+        }
+        
+        //levanta dados para treinamento
+        
+        //treina rede
+        
+    }
+    
+    
+    
+    //=========================================================================
+    //metodos antigos
+    public void fecharArq(){
+        
+        this.laplap2Arq.close();
+        this.laplapArq.close();
+        this.infoSaidaArq.close();
+        System.out.println("fechou");
+        
+    }
+    public void smartphoneBlink(long time, int cor){
+        OSCPortOut sender = null;
+        for (Instrument instrument : instruments) {
+            try {
+                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
+                OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/blink");
+                msg.addArgument(time);
+                msg.addArgument(cor);
+                msg.addArgument(id);
+                try {
+                    sender.send(msg);
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (SocketException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (UnknownHostException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    public void playNoteTest(int fretNumber, int stringNumber){
+        OSCPortOut sender = null;
+        for (Instrument instrument : instruments) {
+            try {
+                sender = new OSCPortOut(InetAddress.getByName(instrument.getIp()), instrument.getReceivePort());
+                OSCMessage msg = new OSCMessage(instrument.getOscAddress()+"/playNoteTest");
+                msg.addArgument((long)100);
+                msg.addArgument(fretNumber);
+                msg.addArgument(stringNumber);
+                //msg.addArgument(id);
+                try {
+                    sender.send(msg);
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }  
+            } catch (SocketException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (UnknownHostException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    public void logBlink(OSCMessage oscMessage){    
+        String[] divideAddress = divideAddress(oscMessage.getAddress());
+        //System.out.println("ad="+divideAddress[2]);
+        if(divideAddress[2].equals("laplap")){
+            laplapArq.printf("%d %d%n", System.nanoTime(),
+                    oscMessage.getArguments().get(0) );
+        }else if(divideAddress[2].equals("laplap2")){
+            
+            laplap2Arq.printf("%l %l%n", System.nanoTime(),
+                    oscMessage.getArguments().get(0) );
+        }
+    }
+    
+    public void TestMsg(){
+     
+        OSCPortOut sender = null;
+        try {
+            sender = new OSCPortOut(InetAddress.getByName("192.168.1.200") , 1234);
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SocketException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         List args = new ArrayList<>();
+        
+        args.add(System.currentTimeMillis() + 1000);
+        args.add(2500);
+        args.add(1);
+        
+         OSCMessage msg = new OSCMessage("/laplap/playString" ,args);
+        
+             
+        try {
+            sender.send(msg);
+            System.out.println("msg sent");
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+                       
+    }   
+                     
+    public void playString(int stringNumber){
+        OSCPortOut sender = null;
+        try {
+            sender = new OSCPortOut(InetAddress.getByName("192.168.0.114") , 1234);
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SocketException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         List args = new ArrayList<>();
+        
+        args.add(System.currentTimeMillis() + 100);
+        args.add(2500);
+        args.add(stringNumber);
+        
+         OSCMessage msg = new OSCMessage("/laplap/playString" ,args);
+         OSCMessage msg2 = new OSCMessage("/laplap/playString" );           
+         
+         msg2.addArgument(System.currentTimeMillis() + 200);
+         msg2.addArgument(250);
+         msg2.addArgument(stringNumber+1);
+
+        try {
+            sender.send(msg);
+      
+            sender.send(msg2);
+            System.out.println("msg sent");
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }

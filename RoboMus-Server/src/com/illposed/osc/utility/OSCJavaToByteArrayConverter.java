@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Date;
-import robomus.server.Instrument;
+import robomus.instrument.Instrument;
 
 /**
  * OSCJavaToByteArrayConverter is a helper class that translates
