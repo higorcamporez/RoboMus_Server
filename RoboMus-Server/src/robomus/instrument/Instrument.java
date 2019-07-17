@@ -40,15 +40,24 @@ public class Instrument implements Serializable{
     protected int threshold;
     protected List<Action> Actions;
     protected Action lastAction;
-    protected OSCPortOut sender;
+    protected String lastInput;
+    protected OSCPortOut sender = null;
     protected List<Delay> delays; 
     protected boolean waitingDelay;
     
     public Instrument(){
+        this.Actions = new ArrayList<Action>(); 
+        this.delays = new ArrayList<Delay>();
+        this.lastInput = null;
+        
     }
 
     public Instrument(String OscAddress) {
+        
         this.OscAddress = OscAddress;
+        this.Actions = new ArrayList<Action>(); 
+        this.delays = new ArrayList<Delay>();
+        
     }
     
     public Instrument(String name, int polyphony, String OscAddress,
@@ -68,7 +77,7 @@ public class Instrument implements Serializable{
         this.threshold = threshold;
         this.Actions = new ArrayList<Action>(); 
         this.delays = new ArrayList<Delay>();
-        
+        this.lastInput = null;
         try {
             this.sender = new OSCPortOut(InetAddress.getByName(this.getIp()), this.getReceivePort());
         } catch (UnknownHostException ex) {
@@ -76,17 +85,24 @@ public class Instrument implements Serializable{
         } catch (SocketException ex) {  
             Logger.getLogger(Instrument.class.getName()).log(Level.SEVERE, null, ex);
         }
+        this.setActions();
         
     }
     
-    private void setActions(){
+    public void setActions(){
         String strActions[] = this.specificProtocol.split(">");
         List actionParametersName = new ArrayList<String>();
        
         for (String strAct : strActions){   
             Action action = new Action();
+            
+            strAct = strAct.substring(1, strAct.length());
+            System.out.println(strAct);
             //separando os parametros da ação
             String strArgs[] = strAct.split(";");
+            
+            
+            System.out.println("args"+strArgs.length +strArgs[0]);
             //adicionando o nome da ação
             action.setActionAdress(strArgs[0]);
             
@@ -97,10 +113,13 @@ public class Instrument implements Serializable{
                  
                 String name = strArgs[i].split("_")[0];
                 String type = strArgs[i].split("_")[1];
-                
+                System.out.println("type " + type);
                 //se for do tipo note(n)    
-                if(type == "n"){
+                if(type.equals("n")){
                     Argument argument = new Argument(name, 'n');
+                    argsList.add(argument);
+                }else if(type.equals("i")){
+                    Argument argument = new Argument(name, 'i');
                     argsList.add(argument);
                 }
              
@@ -186,6 +205,7 @@ public class Instrument implements Serializable{
 
     public void setSpecificProtocol(String specificProtocol) {
         this.specificProtocol = specificProtocol;
+        this.setActions();
     }
 
     public void setIp(String ip) {
@@ -220,39 +240,63 @@ public class Instrument implements Serializable{
         return true;
     }
     
-    public List createNewAction(Long id){
+    public OSCMessage createNewAction(Long id){
         Random rand = new Random();
         Integer index = rand.nextInt(this.Actions.size());
         Action act = this.Actions.get(index);
         List<Argument> args = act.getArguments();
-        List row = new ArrayList<>();
-        OSCMessage oscMessage = null;
+        String row = "";
+        OSCMessage oscMessage = new OSCMessage(this.getOscAddress()+act.getActionAdress());
+        oscMessage.addArgument(id);
         
         //adiciona index que representa ação
-        row.add(index);
-                
+        row += index.toString();
+
         for (Argument arg : args) {
+            
             if(arg.getType() == 'n'){
                 Note note = Notes.generateNote();
-                //adiciona valor midi que representa a nota
-                row.add(note.getMidiValue());
                 
-                oscMessage = new OSCMessage(this.getOscAddress()+act.getActionAdress());
-                oscMessage.addArgument(id);
+                //adiciona valor midi que representa a nota
+                row += ",";
+                row += note.getMidiValue().toString();
+                
                 oscMessage.addArgument(note.getSymbol()+note.getOctavePitch());
+            }else if(arg.getType() == 'i'){
+                oscMessage.addArgument(500);
             }
             //tem que criar os ifs para os outros tipos
         }
+        System.out.println(oscMessage.getAddress() +";"+
+                oscMessage.getArguments().get(0)+";"+oscMessage.getArguments().get(1));
+        //verifica se é primeira mensagen
+        if(this.lastInput != null){
+            Delay delay = new Delay(id, this.lastInput, row);          
+            this.delays.add(delay);
+        }else{
+            this.lastInput = row;
+        }
+        
+        /*
         List list = new ArrayList<>();
         
         list.add(oscMessage);
         list.add(row);
-        
-        return list;
+         */
+        return oscMessage;
+       
     }
     
     public void send(OSCMessage oscMessge){
-        
+        if(this.sender == null){
+            try {
+                this.sender = new OSCPortOut(InetAddress.getByName(this.getIp()), this.getReceivePort());
+            } catch (UnknownHostException ex) {
+                Logger.getLogger(Instrument.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SocketException ex) {  
+                Logger.getLogger(Instrument.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         try {
             sender.send(oscMessge);
         } catch (IOException ex) {
@@ -260,19 +304,27 @@ public class Instrument implements Serializable{
         }
     }
     
-    public void sendTrainMessage(OSCMessage oscMessge){
+    public void sendTrainMessage(Long id){
+        OSCMessage oscMessge = createNewAction(id);
         this.send(oscMessge);
         this.setWaitingDelay(true);
     }
 
-    public void setLastDelay(Integer id, Integer delay) {
+    public void setLastDelay(Long id, Long delay) {        
+        if(this.delays.size()>0){
+            Delay d = this.delays.get(this.delays.size() - 1);
+            if(d.getMessageId() == id){
+               d.setDelay(delay);
+            }
+        }
+    }
+    
+    public void removeLastDelay(){
+        this.lastInput = null;
+        if(this.delays.size()>0){
+            this.delays.remove(this.delays.size() - 1);
+        }
         
-        
-        Delay d = this.delays.get(this.delays.size() - 1);
-        if(d.getMessageId() == id){
-           d.setDelay(delay);
-        }        
-                
     }
     
 }

@@ -44,6 +44,7 @@ public class Server {
     private Date date;
     private SimpleDateFormat dateFormat;
     private int lastIdReceived;
+    private boolean waitingDelay;
     
     public Server(int port) {
         this.sychInterval = 10000; 
@@ -346,7 +347,7 @@ public class Server {
             OSCListener listener = new OSCListener() {
                 @Override
                 public void acceptMessage(java.util.Date time, OSCMessage message) {
-
+                    System.out.println("receive: "+message.getAddress());
                     String[] dividedAdress = divideAddress(message.getAddress());
                     if (dividedAdress.length >= 2) {
                         //System.out.println(dividedAdress[1]);
@@ -454,42 +455,43 @@ public class Server {
         
         String address[] = oscMessage.getAddress().split("/");
         
-        String instrumentName = address[2];
-        Integer id = oscMessage.getArguments().indexOf(0);
-        Integer delay = oscMessage.getArguments().indexOf(1);
+        String instrumentName = address[3];
+        Long id = (Long) oscMessage.getArguments().get(0);
+        Long delay = (Long) oscMessage.getArguments().get(1);
         
+        System.out.println("/delay;"+id+";"+delay);
+        System.out.println(instrumentName);
         //buscando instrumento pelo nome
         int index = instruments.indexOf(new Instrument("/"+instrumentName));
         if(index != -1){
             Instrument instrument = instruments.get(index);
-            
+            System.out.println("setou false");
             //setando espera do delay para falso
             instrument.setWaitingDelay(false);
-            
+            this.waitingDelay =false;
             //setando delay
-            instrument.setLastDelay(delay);
+            instrument.setLastDelay(id, delay);
             
         }
                
     }
     
-    public void trainInstrumentDelay(Instrument  instrument){
+    public void trainInstrumentDelay(Instrument instrument){
         Integer numMessage = 10;
+        Long id = new Long(1);          
         
-        boolean waitingDelay =  true;
-        
-        //enviar primeira msg
-        instrument.createNewAction(id);
-               
-        for(int i = 1; i < numMessage; i++){
-            instrument.
+        for(int i = 0; i < numMessage; i++){
+            instrument.sendTrainMessage(id);
+            this.waitingDelay = true;
             long start = System.currentTimeMillis();        
-            while(instrument.isWaitingDelay() || System.currentTimeMillis() - start < 5000);
-            if(waitingDelay){
-                
-            }else{
-                
+            while(this.waitingDelay &&
+                    (System.currentTimeMillis() - start < 1000)){};
+            
+            if(instrument.isWaitingDelay()){
+                System.out.println("removeLastDelay");
+                instrument.removeLastDelay();
             }
+            id += 1;
         }
         
         //levanta dados para treinamento
@@ -499,6 +501,15 @@ public class Server {
     }
     
     
+    public Instrument findInstrument(String oscAddress){
+        //buscando instrumento pelo nome
+        int index = instruments.indexOf(new Instrument(oscAddress));
+        if(index != -1){
+            return (instruments.get(index));
+        }else{
+            return null;
+        }
+    }
     
     //=========================================================================
     //metodos antigos

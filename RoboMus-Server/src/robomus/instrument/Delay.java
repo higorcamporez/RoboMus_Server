@@ -14,31 +14,54 @@ import java.util.Objects;
  */
 public class Delay {
     
-    private Integer messageId;
+    private Long messageId;
     private String input1;
     private String input2;
-    private Integer delay;
+    private Long delay;
 
     public Delay() {
-        delay = -1;
+        this.delay = new Long(-1);
     }
 
-    public Integer getMessageId() {
+    public Delay(Long messageId, String input1, String input2) {
+        this.messageId = messageId;
+        this.input1 = input1;
+        this.input2 = input2;
+        this.delay = new Long(-1);
+    }
+    
+    public Long getMessageId() {
         return messageId;
     }
 
-    public void setMessageId(Integer messageId) {
+    public void setMessageId(Long messageId) {
         this.messageId = messageId;
     }
 
-    public Integer getDelay() {
+    public Long getDelay() {
         return delay;
     }
 
-    public void setDelay(Integer delay) {
+    public void setDelay(Long delay) {
         this.delay = delay;
     }
 
+    public String getInput1() {
+        return input1;
+    }
+
+    public void setInput1(String input1) {
+        this.input1 = input1;
+    }
+
+    public String getInput2() {
+        return input2;
+    }
+
+    public void setInput2(String input2) {
+        this.input2 = input2;
+    }
+    
     @Override
     public int hashCode() {
         int hash = 3;
